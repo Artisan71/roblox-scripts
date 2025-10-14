@@ -1,0 +1,18 @@
+local player = game.Players.LocalPlayer
+local userInputService = game:GetService("UserInputService")
+
+userInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.Y then
+        local character = player.Character
+        if character then
+            local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+            local doomspire = game.Workspace.Map.Constant.Doomspire.Doomspire
+            if humanoidRootPart and doomspire then
+                local targetPart = doomspire.PrimaryPart or doomspire:FindFirstChildWhichIsA("BasePart")
+                if targetPart then
+                    humanoidRootPart.CFrame = targetPart.CFrame + Vector3.new(0, 5, 0)
+                end
+            end
+        end
+    end
+end)
