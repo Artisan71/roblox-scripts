@@ -1,18 +1,262 @@
-local player = game.Players.LocalPlayer
-local userInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui", 10) -- Timeout after 10 seconds
 
-userInputService.InputBegan:Connect(function(input)
+-- Function to safely access GUI elements with error handling
+local function safeGet(parent, childName, timeout)
+    local success, result = pcall(function()
+        return parent:WaitForChild(childName, timeout or 5)
+    end)
+    if not success or not result then
+        warn("Failed to find " .. childName .. " in " .. tostring(parent))
+        return nil
+    end
+    return result
+end
+
+-- Teleport functionality (triggered by pressing 'Y')
+UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.Y then
         local character = player.Character
         if character then
             local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-            local doomspire = game.Workspace.Map.Constant.Doomspire.Doomspire
+            local doomspire = game.Workspace:FindFirstChild("Map")
+                and game.Workspace.Map:FindFirstChild("Constant")
+                and game.Workspace.Map.Constant:FindFirstChild("Doomspire")
+                and game.Workspace.Map.Constant.Doomspire:FindFirstChild("Doomspire")
             if humanoidRootPart and doomspire then
                 local targetPart = doomspire.PrimaryPart or doomspire:FindFirstChildWhichIsA("BasePart")
                 if targetPart then
                     humanoidRootPart.CFrame = targetPart.CFrame + Vector3.new(0, 5, 0)
+                    print("Teleported to Doomspire!")
+                else
+                    warn("No suitable target part found in Doomspire")
                 end
+            else
+                warn("HumanoidRootPart or Doomspire not found")
             end
+        else
+            warn("Character not found")
         end
     end
 end)
+
+-- Create a ScreenGui to hold the text
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "ArtisanClientGui"
+screenGui.Parent = playerGui
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Enabled = true
+
+-- Create a TextLabel for the text
+local textLabel = Instance.new("TextLabel")
+textLabel.Name = "ArtisanText"
+textLabel.Parent = screenGui
+textLabel.Text = "Artisan Client"
+textLabel.Font = Enum.Font.SourceSans -- Reliable font, change to ComicSans if desired
+textLabel.TextColor3 = Color3.fromRGB(203, 0, 255)
+textLabel.TextScaled = true
+textLabel.TextSize = 50
+textLabel.BackgroundTransparency = 1
+textLabel.Size = UDim2.new(0.5, 0, 0.2, 0)
+textLabel.Position = UDim2.new(0.25, 0, 0.4, 0)
+textLabel.ZIndex = 10
+textLabel.TextTransparency = 0
+
+-- Fade out the text after 2 seconds
+local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+local tween = TweenService:Create(textLabel, tweenInfo, {TextTransparency = 1, TextStrokeTransparency = 1})
+task.wait(2)
+tween:Play()
+tween.Completed:Wait()
+screenGui:Destroy()
+print("Artisan Client GUI destroyed")
+
+-- GUI modifications with error handling
+local ui = safeGet(playerGui, "UI")
+if ui then
+    local surface = safeGet(ui, "Surface")
+    if surface then
+        -- Modify Left Status
+        local left = safeGet(surface, "Left")
+        if left then
+            local status = safeGet(left, "Status")
+            if status then
+                -- Modify Lower Bars (Stamina and Health)
+                local lower = safeGet(status, "Lower")
+                if lower then
+                    local bars = safeGet(lower, "Bars")
+                    if bars then
+                        -- Modify Stamina Bar
+                        local stamina = safeGet(bars, "Stamina")
+                        if stamina then
+                            local staminaBar = safeGet(stamina, "Bar")
+                            if staminaBar then
+                                staminaBar.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                                print("Modified Stamina Bar")
+                            end
+                        end
+                        -- Modify Health Bar
+                        local health = safeGet(bars, "Health")
+                        if health then
+                            local healthBar = safeGet(health, "Bar")
+                            if healthBar then
+                                healthBar.Image = "http://www.roblox.com/asset/?id=10204152810"
+                                healthBar.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                                print("Modified Health Bar")
+                            end
+                        end
+                    end
+                    -- Modify Lower Background
+                    local lowerBackground = safeGet(lower, "Background")
+                    if lowerBackground then
+                        lowerBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                        print("Modified Lower Background")
+                    end
+                    -- Modify Lower Buttons Settings
+                    local buttons = safeGet(lower, "Buttons")
+                    if buttons then
+                        local settings = safeGet(buttons, "Settings")
+                        if settings then
+                            settings.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                            print("Modified Settings Button")
+                        end
+                    end
+                end
+                -- Modify Upper Currency
+                local upper = safeGet(status, "Upper")
+                if upper then
+                    local currency = safeGet(upper, "Currency")
+                    if currency then
+                        -- Modify CurrencyIcon
+                        local currencyIcon = safeGet(currency, "CurrencyIcon")
+                        if currencyIcon then
+                            currencyIcon.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                            print("Modified Currency Icon")
+                        end
+                        -- Modify Amount (Text)
+                        local amount = safeGet(currency, "Amount")
+                        if amount then
+                            amount.TextColor3 = Color3.fromRGB(203, 0, 255)
+                            print("Modified Currency Amount")
+                        end
+                        -- Modify BG
+                        local bg = safeGet(currency, "BG")
+                        if bg then
+                            bg.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                            print("Modified Currency BG")
+                        end
+                    end
+                end
+            end
+        end
+        -- Modify Middle Hotbar
+        local middle = safeGet(surface, "Middle")
+        if middle then
+            local hotbar = safeGet(middle, "Hotbar")
+            if hotbar then
+                local container = safeGet(hotbar, "Container")
+                if container then
+                    -- Modify Background
+                    local background = safeGet(container, "Background")
+                    if background then
+                        background.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                        print("Modified Hotbar Background")
+                        -- Modify TopLine
+                        local topLine = safeGet(background, "TopLine")
+                        if topLine then
+                            topLine.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                            print("Modified Hotbar TopLine")
+                        end
+                    end
+                    -- Modify BackpackButton
+                    local backpackButton = safeGet(container, "BackpackButton")
+                    if backpackButton then
+                        backpackButton.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                        print("Modified Backpack Button")
+                    end
+                end
+            end
+        end
+        -- Modify Alert Background
+        local alert = safeGet(surface, "Alert")
+        if alert then
+            local alertBackground = safeGet(alert, "Background")
+            if alertBackground then
+                alertBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                print("Modified Alert Background")
+            end
+        end
+        -- Modify Disaster Background
+        local disaster = safeGet(surface, "Disaster")
+        if disaster then
+            local disasterBackground = safeGet(disaster, "Background")
+            if disasterBackground then
+                disasterBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                print("Modified Disaster Background")
+            end
+        end
+        -- Modify Map Background
+        local map = safeGet(surface, "Map")
+        if map then
+            local mapBackground = safeGet(map, "BG")
+            if mapBackground then
+                mapBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                print("Modified Map Background")
+            end
+        end
+        -- Modify Monetization Background
+        local monetization = safeGet(surface, "Monetization")
+        if monetization then
+            local monetizationBackground = safeGet(monetization, "Background")
+            if monetizationBackground then
+                monetizationBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                print("Modified Monetization Background")
+            end
+        end
+        -- Modify Bottom Background
+        local bottom = safeGet(surface, "Bottom")
+        if bottom then
+            local bottomBackground = safeGet(bottom, "Background")
+            if bottomBackground then
+                bottomBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                print("Modified Bottom Background")
+            end
+        end
+        -- Modify Top Background
+        local top = safeGet(surface, "Top")
+        if top then
+            local topBackground = safeGet(top, "Background")
+            if topBackground then
+                topBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                print("Modified Top Background")
+            end
+        end
+        -- Modify Settings Background
+        local settingsFrame = safeGet(surface, "Settings")
+        if settingsFrame then
+            local settingsBackground = safeGet(settingsFrame, "Background")
+            if settingsBackground then
+                settingsBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                print("Modified Settings Background")
+            end
+        end
+        -- Modify Close Background
+        local close = safeGet(surface, "Close")
+        if close then
+            local closeBackground = safeGet(close, "Background")
+            if closeBackground then
+                closeBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                print("Modified Close Background")
+            end
+        end
+    else
+        warn("Surface not found in UI")
+    end
+else
+    warn("UI not found in PlayerGui")
+end
