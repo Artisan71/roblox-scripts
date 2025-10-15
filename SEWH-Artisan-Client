@@ -1,10 +1,22 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui", 10) -- Timeout after 10 seconds
+local playerGui = player:WaitForChild("PlayerGui", 10)
 
--- Function to safely access GUI elements with error handling
+-- Toggle states
+local toggles = {
+    flying = false,
+    noclip = false,
+    infiniteJump = false,
+    esp = false,
+    speedHack = false,
+    fullbright = false
+}
+
+-- Function to safely access GUI elements with timeout
 local function safeGet(parent, childName, timeout)
     local success, result = pcall(function()
         return parent:WaitForChild(childName, timeout or 5)
@@ -16,16 +28,223 @@ local function safeGet(parent, childName, timeout)
     return result
 end
 
--- Teleport functionality (triggered by pressing 'Y')
+-- Function to retry GUI access with multiple attempts
+local function retryAccess(parent, childName, maxAttempts, delay)
+    local attempts = 0
+    local element = nil
+    while attempts < maxAttempts and not element do
+        element = safeGet(parent, childName, delay)
+        if not element then
+            attempts = attempts + 1
+            task.wait(delay)
+        end
+    end
+    if not element then
+        warn("Gave up finding " .. childName .. " after " .. maxAttempts .. " attempts")
+    end
+    return element
+end
+
+-- Apply GUI tweaks with retry logic
+local function applyGuiTweaks()
+    print("Attempting GUI tweaks...")
+    local ui = retryAccess(playerGui, "UI", 10, 3) -- Retry for 30 seconds
+    if not ui then
+        warn("UI not found - attempting generic UI tweak")
+        -- Fallback: Change all Frames/ImageLabels in PlayerGui
+        for _, obj in pairs(playerGui:GetDescendants()) do
+            if obj:IsA("Frame") or obj:IsA("ImageLabel") then
+                pcall(function()
+                    obj.BackgroundColor3 = Color3.fromRGB(203, 0, 255)
+                    obj.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                    print("Applied generic tweak to " .. obj:GetFullName())
+                end)
+            elseif obj:IsA("TextLabel") then
+                pcall(function()
+                    obj.TextColor3 = Color3.fromRGB(203, 0, 255)
+                    print("Applied generic tweak to " .. obj:GetFullName())
+                end)
+            end
+        end
+        return
+    end
+
+    local surface = retryAccess(ui, "Surface", 5, 2)
+    if not surface then return end
+
+    -- Left Status
+    local left = retryAccess(surface, "Left", 5, 2)
+    if left then
+        local status = retryAccess(left, "Status", 5, 2)
+        if status then
+            -- Lower Bars
+            local lower = retryAccess(status, "Lower", 5, 2)
+            if lower then
+                local bars = retryAccess(lower, "Bars", 5, 2)
+                if bars then
+                    -- Stamina Bar
+                    local stamina = retryAccess(bars, "Stamina", 5, 2)
+                    if stamina then
+                        local staminaBar = retryAccess(stamina, "Bar", 5, 2)
+                        if staminaBar then
+                            staminaBar.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                            print("Modified Stamina Bar")
+                        end
+                    end
+                    -- Health Bar
+                    local health = retryAccess(bars, "Health", 5, 2)
+                    if health then
+                        local healthBar = retryAccess(health, "Bar", 5, 2)
+                        if healthBar then
+                            pcall(function()
+                                healthBar.Image = "http://www.roblox.com/asset/?id=10204152810"
+                                healthBar.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                                print("Modified Health Bar")
+                            end)
+                        end
+                    end
+                end
+                -- Lower Background
+                local lowerBackground = retryAccess(lower, "Background", 5, 2)
+                if lowerBackground then
+                    lowerBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                    print("Modified Lower Background")
+                end
+                -- Lower Buttons Settings
+                local buttons = retryAccess(lower, "Buttons", 5, 2)
+                if buttons then
+                    local settings = retryAccess(buttons, "Settings", 5, 2)
+                    if settings then
+                        settings.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                        print("Modified Settings Button")
+                    end
+                end
+            end
+            -- Upper Currency
+            local upper = retryAccess(status, "Upper", 5, 2)
+            if upper then
+                local currency = retryAccess(upper, "Currency", 5, 2)
+                if currency then
+                    local currencyIcon = retryAccess(currency, "CurrencyIcon", 5, 2)
+                    if currencyIcon then
+                        currencyIcon.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                        print("Modified Currency Icon")
+                    end
+                    local amount = retryAccess(currency, "Amount", 5, 2)
+                    if amount then
+                        amount.TextColor3 = Color3.fromRGB(203, 0, 255)
+                        print("Modified Currency Amount")
+                    end
+                    local bg = retryAccess(currency, "BG", 5, 2)
+                    if bg then
+                        bg.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                        print("Modified Currency BG")
+                    end
+                end
+            end
+        end
+    end
+    -- Middle Hotbar
+    local middle = retryAccess(surface, "Middle", 5, 2)
+    if middle then
+        local hotbar = retryAccess(middle, "Hotbar", 5, 2)
+        if hotbar then
+            local container = retryAccess(hotbar, "Container", 5, 2)
+            if container then
+                local background = retryAccess(container, "Background", 5, 2)
+                if background then
+                    background.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                    print("Modified Hotbar Background")
+                    local topLine = retryAccess(background, "TopLine", 5, 2)
+                    if topLine then
+                        topLine.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                        print("Modified Hotbar TopLine")
+                    end
+                end
+                local backpackButton = retryAccess(container, "BackpackButton", 5, 2)
+                if backpackButton then
+                    backpackButton.ImageColor3 = Color3.fromRGB(203, 0, 255)
+                    print("Modified Backpack Button")
+                end
+            end
+        end
+    end
+    -- Alert, Disaster, Map, etc.
+    local alert = retryAccess(surface, "Alert", 5, 2)
+    if alert then
+        local alertBackground = retryAccess(alert, "Background", 5, 2)
+        if alertBackground then
+            alertBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
+            print("Modified Alert Background")
+        end
+    end
+    local disaster = retryAccess(surface, "Disaster", 5, 2)
+    if disaster then
+        local disasterBackground = retryAccess(disaster, "Background", 5, 2)
+        if disasterBackground then
+            disasterBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
+            print("Modified Disaster Background")
+        end
+    end
+    local map = retryAccess(surface, "Map", 5, 2)
+    if map then
+        local mapBackground = retryAccess(map, "BG", 5, 2)
+        if mapBackground then
+            mapBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
+            print("Modified Map Background")
+        end
+    end
+    local monetization = retryAccess(surface, "Monetization", 5, 2)
+    if monetization then
+        local monetizationBackground = retryAccess(monetization, "Background", 5, 2)
+        if monetizationBackground then
+            monetizationBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
+            print("Modified Monetization Background")
+        end
+    end
+    local bottom = retryAccess(surface, "Bottom", 5, 2)
+    if bottom then
+        local bottomBackground = retryAccess(bottom, "Background", 5, 2)
+        if bottomBackground then
+            bottomBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
+            print("Modified Bottom Background")
+        end
+    end
+    local top = retryAccess(surface, "Top", 5, 2)
+    if top then
+        local topBackground = retryAccess(top, "Background", 5, 2)
+        if topBackground then
+            topBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
+            print("Modified Top Background")
+        end
+    end
+    local settingsFrame = retryAccess(surface, "Settings", 5, 2)
+    if settingsFrame then
+        local settingsBackground = retryAccess(settingsFrame, "Background", 5, 2)
+        if settingsBackground then
+            settingsBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
+            print("Modified Settings Background")
+        end
+    end
+    local close = retryAccess(surface, "Close", 5, 2)
+    if close then
+        local closeBackground = retryAccess(close, "Background", 5, 2)
+        if closeBackground then
+            closeBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
+            print("Modified Close Background")
+        end
+    end
+    print("GUI tweaks completed")
+end
+
+-- Teleport functionality (Y key)
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.Y then
         local character = player.Character
         if character then
             local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-            local doomspire = game.Workspace:FindFirstChild("Map")
-                and game.Workspace.Map:FindFirstChild("Constant")
-                and game.Workspace.Map.Constant:FindFirstChild("Doomspire")
-                and game.Workspace.Map.Constant.Doomspire:FindFirstChild("Doomspire")
+            local map = game.Workspace:FindFirstChild("Map")
+            local doomspire = map and map:FindFirstChild("Constant") and map.Constant:FindFirstChild("Doomspire") and map.Constant.Doomspire:FindFirstChild("Doomspire")
             if humanoidRootPart and doomspire then
                 local targetPart = doomspire.PrimaryPart or doomspire:FindFirstChildWhichIsA("BasePart")
                 if targetPart then
@@ -43,7 +262,297 @@ UserInputService.InputBegan:Connect(function(input)
     end
 end)
 
--- Create a ScreenGui to hold the text
+-- Flying (F key)
+local flyBodyVelocity, flyBodyAngularVelocity
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.F then
+        local character = player.Character
+        if character then
+            local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+            if humanoidRootPart then
+                toggles.flying = not toggles.flying
+                if toggles.flying then
+                    flyBodyVelocity = Instance.new("BodyVelocity")
+                    flyBodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
+                    flyBodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                    flyBodyVelocity.Parent = humanoidRootPart
+
+                    flyBodyAngularVelocity = Instance.new("BodyAngularVelocity")
+                    flyBodyAngularVelocity.MaxTorque = Vector3.new(4000, 4000, 4000)
+                    flyBodyAngularVelocity.AngularVelocity = Vector3.new(0, 0, 0)
+                    flyBodyAngularVelocity.Parent = humanoidRootPart
+
+                    local speed = 50
+                    local keys = {w = false, a = false, s = false, d = false, space = false, leftCtrl = false}
+                    UserInputService.InputBegan:Connect(function(key)
+                        if key.KeyCode == Enum.KeyCode.W then keys.w = true end
+                        if key.KeyCode == Enum.KeyCode.A then keys.a = true end
+                        if key.KeyCode == Enum.KeyCode.S then keys.s = true end
+                        if key.KeyCode == Enum.KeyCode.D then keys.d = true end
+                        if key.KeyCode == Enum.KeyCode.Space then keys.space = true end
+                        if key.KeyCode == Enum.KeyCode.LeftControl then keys.leftCtrl = true end
+                    end)
+                    UserInputService.InputEnded:Connect(function(key)
+                        if key.KeyCode == Enum.KeyCode.W then keys.w = false end
+                        if key.KeyCode == Enum.KeyCode.A then keys.a = false end
+                        if key.KeyCode == Enum.KeyCode.S then keys.s = false end
+                        if key.KeyCode == Enum.KeyCode.D then keys.d = false end
+                        if key.KeyCode == Enum.KeyCode.Space then keys.space = false end
+                        if key.KeyCode == Enum.KeyCode.LeftControl then keys.leftCtrl = false end
+                    end)
+
+                    RunService.Heartbeat:Connect(function()
+                        if toggles.flying and humanoidRootPart then
+                            local camera = workspace.CurrentCamera
+                            local moveVector = Vector3.new(0, 0, 0)
+                            if keys.w then moveVector = moveVector + camera.CFrame.LookVector end
+                            if keys.s then moveVector = moveVector - camera.CFrame.LookVector end
+                            if keys.a then moveVector = moveVector - camera.CFrame.RightVector end
+                            if keys.d then moveVector = moveVector + camera.CFrame.RightVector end
+                            if keys.space then moveVector = moveVector + Vector3.new(0, 1, 0) end
+                            if keys.leftCtrl then moveVector = moveVector - Vector3.new(0, 1, 0) end
+                            flyBodyVelocity.Velocity = moveVector * speed
+                            flyBodyAngularVelocity.AngularVelocity = Vector3.new(0, camera.CFrame:ToObjectSpace(CFrame.new(humanoidRootPart.Position)):ToOrientation() * math.pi / 180, 0)
+                        end
+                    end)
+                    print("Flying: Enabled")
+                else
+                    if flyBodyVelocity then flyBodyVelocity:Destroy() end
+                    if flyBodyAngularVelocity then flyBodyAngularVelocity:Destroy() end
+                    print("Flying: Disabled")
+                end
+            end
+        end
+    end
+end)
+
+-- Noclip (G key)
+local noclipConnection
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.G then
+        local character = player.Character
+        if character then
+            toggles.noclip = not toggles.noclip
+            if toggles.noclip then
+                noclipConnection = RunService.Stepped:Connect(function()
+                    for _, part in pairs(character:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                end)
+                print("Noclip: Enabled")
+            else
+                if noclipConnection then noclipConnection:Disconnect() end
+                for _, part in pairs(character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
+                    end
+                end
+                print("Noclip: Disabled")
+            end
+        end
+    end
+end)
+
+-- Infinite Jump (H key)
+local jumpConnection
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.H then
+        local character = player.Character
+        if character then
+            local humanoid = character:FindFirstChild("Humanoid")
+            if humanoid then
+                toggles.infiniteJump = not toggles.infiniteJump
+                if toggles.infiniteJump then
+                    jumpConnection = UserInputService.JumpRequest:Connect(function()
+                        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                    end)
+                    print("Infinite Jump: Enabled")
+                else
+                    if jumpConnection then jumpConnection:Disconnect() end
+                    print("Infinite Jump: Disabled")
+                end
+            end
+        end
+    end
+end)
+
+-- ESP (J key)
+local espConnections = {}
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.J then
+        toggles.esp = not toggles.esp
+        if toggles.esp then
+            for _, otherPlayer in pairs(Players:GetPlayers()) do
+                if otherPlayer ~= player and otherPlayer.Character then
+                    local head = otherPlayer.Character:FindFirstChild("Head")
+                    if head then
+                        local billboardGui = Instance.new("BillboardGui")
+                        billboardGui.Adornee = head
+                        billboardGui.Size = UDim2.new(0, 200, 0, 50)
+                        billboardGui.StudsOffset = Vector3.new(0, 2, 0)
+                        billboardGui.Parent = head
+
+                        local box = Instance.new("Frame")
+                        box.Size = UDim2.new(1, 0, 1, 0)
+                        box.BackgroundTransparency = 1
+                        box.BorderSizePixel = 2
+                        box.BorderColor3 = Color3.new(0, 1, 0)
+                        box.Parent = billboardGui
+
+                        local nameLabel = Instance.new("TextLabel")
+                        nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+                        nameLabel.BackgroundTransparency = 1
+                        nameLabel.Text = otherPlayer.Name
+                        nameLabel.TextColor3 = Color3.new(0, 1, 0)
+                        nameLabel.TextScaled = true
+                        nameLabel.Font = Enum.Font.SourceSansBold
+                        nameLabel.Parent = billboardGui
+
+                        local distLabel = Instance.new("TextLabel")
+                        distLabel.Size = UDim2.new(1, 0, 0.5, 0)
+                        distLabel.Position = UDim2.new(0, 0, 0.5, 0)
+                        distLabel.BackgroundTransparency = 1
+                        distLabel.Text = "Dist: 0"
+                        distLabel.TextColor3 = Color3.new(0, 1, 0)
+                        distLabel.TextScaled = true
+                        distLabel.Font = Enum.Font.SourceSans
+                        distLabel.Parent = billboardGui
+
+                        espConnections[otherPlayer] = {
+                            billboardGui = billboardGui,
+                            distLabel = distLabel,
+                            update = RunService.Heartbeat:Connect(function()
+                                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and head.Parent then
+                                    local dist = (head.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                                    distLabel.Text = "Dist: " .. math.floor(dist)
+                                end
+                            end)
+                        }
+                    end
+                end
+            end
+            Players.PlayerAdded:Connect(function(newPlayer)
+                newPlayer.CharacterAdded:Connect(function(char)
+                    if toggles.esp then
+                        task.wait(1)
+                        local head = char:FindFirstChild("Head")
+                        if head then
+                            local billboardGui = Instance.new("BillboardGui")
+                            billboardGui.Adornee = head
+                            billboardGui.Size = UDim2.new(0, 200, 0, 50)
+                            billboardGui.StudsOffset = Vector3.new(0, 2, 0)
+                            billboardGui.Parent = head
+
+                            local box = Instance.new("Frame")
+                            box.Size = UDim2.new(1, 0, 1, 0)
+                            box.BackgroundTransparency = 1
+                            box.BorderSizePixel = 2
+                            box.BorderColor3 = Color3.new(0, 1, 0)
+                            box.Parent = billboardGui
+
+                            local nameLabel = Instance.new("TextLabel")
+                            nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+                            nameLabel.BackgroundTransparency = 1
+                            nameLabel.Text = newPlayer.Name
+                            nameLabel.TextColor3 = Color3.new(0, 1, 0)
+                            nameLabel.TextScaled = true
+                            nameLabel.Font = Enum.Font.SourceSansBold
+                            nameLabel.Parent = billboardGui
+
+                            local distLabel = Instance.new("TextLabel")
+                            distLabel.Size = UDim2.new(1, 0, 0.5, 0)
+                            distLabel.Position = UDim2.new(0, 0, 0.5, 0)
+                            distLabel.BackgroundTransparency = 1
+                            distLabel.Text = "Dist: 0"
+                            distLabel.TextColor3 = Color3.new(0, 1, 0)
+                            distLabel.TextScaled = true
+                            distLabel.Font = Enum.Font.SourceSans
+                            distLabel.Parent = billboardGui
+
+                            espConnections[newPlayer] = {
+                                billboardGui = billboardGui,
+                                distLabel = distLabel,
+                                update = RunService.Heartbeat:Connect(function()
+                                    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and head.Parent then
+                                        local dist = (head.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                                        distLabel.Text = "Dist: " .. math.floor(dist)
+                                    end
+                                end)
+                            }
+                        end
+                    end
+                end)
+            end)
+            print("ESP: Enabled")
+        else
+            for _, conn in pairs(espConnections) do
+                if conn.update then conn.update:Disconnect() end
+                if conn.billboardGui then conn.billboardGui:Destroy() end
+            end
+            espConnections = {}
+            print("ESP: Disabled")
+        end
+    end
+end)
+
+-- Speed Hack (K key)
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.K then
+        local character = player.Character
+        if character then
+            local humanoid = character:FindFirstChild("Humanoid")
+            if humanoid then
+                toggles.speedHack = not toggles.speedHack
+                humanoid.WalkSpeed = toggles.speedHack and 50 or 16
+                print("Speed Hack: " .. (toggles.speedHack and "Enabled" or "Disabled"))
+            end
+        end
+    end
+end)
+
+-- Fullbright (L key)
+local originalBrightness, originalGlobalShadows
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.L then
+        toggles.fullbright = not toggles.fullbright
+        if toggles.fullbright then
+            originalBrightness = Lighting.Brightness
+            originalGlobalShadows = Lighting.GlobalShadows
+            Lighting.Brightness = 2
+            Lighting.GlobalShadows = false
+            Lighting.FogEnd = 100000
+            Lighting.ColorShift_Bottom = Color3.new(0, 0, 0)
+            Lighting.ColorShift_Top = Color3.new(0, 0, 0)
+            Lighting.OutdoorAmbient = Color3.new(0.5, 0.5, 0.5)
+            print("Fullbright: Enabled")
+        else
+            if originalBrightness then Lighting.Brightness = originalBrightness end
+            if originalGlobalShadows ~= nil then Lighting.GlobalShadows = originalGlobalShadows end
+            Lighting.FogEnd = 10000
+            Lighting.OutdoorAmbient = Color3.new(0, 0, 0)
+            print("Fullbright: Disabled")
+        end
+    end
+end)
+
+-- Click Teleport (Left Ctrl + Click)
+local mouse = player:GetMouse()
+mouse.Button1Down:Connect(function()
+    if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+        local character = player.Character
+        if character then
+            local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+            if humanoidRootPart and mouse.Hit then
+                humanoidRootPart.CFrame = mouse.Hit + Vector3.new(0, 5, 0)
+                print("Teleported to click position!")
+            end
+        end
+    end
+end)
+
+-- Splash Screen
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ArtisanClientGui"
 screenGui.Parent = playerGui
@@ -52,22 +561,20 @@ screenGui.IgnoreGuiInset = true
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Enabled = true
 
--- Create a TextLabel for the text
 local textLabel = Instance.new("TextLabel")
 textLabel.Name = "ArtisanText"
 textLabel.Parent = screenGui
 textLabel.Text = "Artisan Client"
-textLabel.Font = Enum.Font.SourceSans -- Reliable font, change to ComicSans if desired
+textLabel.Font = Enum.Font.SourceSans
 textLabel.TextColor3 = Color3.fromRGB(203, 0, 255)
 textLabel.TextScaled = true
-textLabel.TextSize = 50
+textLabel.TextSize = 70
 textLabel.BackgroundTransparency = 1
 textLabel.Size = UDim2.new(0.5, 0, 0.2, 0)
 textLabel.Position = UDim2.new(0.25, 0, 0.4, 0)
 textLabel.ZIndex = 10
 textLabel.TextTransparency = 0
 
--- Fade out the text after 2 seconds
 local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
 local tween = TweenService:Create(textLabel, tweenInfo, {TextTransparency = 1, TextStrokeTransparency = 1})
 task.wait(2)
@@ -76,187 +583,39 @@ tween.Completed:Wait()
 screenGui:Destroy()
 print("Artisan Client GUI destroyed")
 
--- GUI modifications with error handling
-local ui = safeGet(playerGui, "UI")
-if ui then
-    local surface = safeGet(ui, "Surface")
-    if surface then
-        -- Modify Left Status
-        local left = safeGet(surface, "Left")
-        if left then
-            local status = safeGet(left, "Status")
-            if status then
-                -- Modify Lower Bars (Stamina and Health)
-                local lower = safeGet(status, "Lower")
-                if lower then
-                    local bars = safeGet(lower, "Bars")
-                    if bars then
-                        -- Modify Stamina Bar
-                        local stamina = safeGet(bars, "Stamina")
-                        if stamina then
-                            local staminaBar = safeGet(stamina, "Bar")
-                            if staminaBar then
-                                staminaBar.ImageColor3 = Color3.fromRGB(203, 0, 255)
-                                print("Modified Stamina Bar")
-                            end
-                        end
-                        -- Modify Health Bar
-                        local health = safeGet(bars, "Health")
-                        if health then
-                            local healthBar = safeGet(health, "Bar")
-                            if healthBar then
-                                healthBar.Image = "http://www.roblox.com/asset/?id=10204152810"
-                                healthBar.ImageColor3 = Color3.fromRGB(203, 0, 255)
-                                print("Modified Health Bar")
-                            end
-                        end
-                    end
-                    -- Modify Lower Background
-                    local lowerBackground = safeGet(lower, "Background")
-                    if lowerBackground then
-                        lowerBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
-                        print("Modified Lower Background")
-                    end
-                    -- Modify Lower Buttons Settings
-                    local buttons = safeGet(lower, "Buttons")
-                    if buttons then
-                        local settings = safeGet(buttons, "Settings")
-                        if settings then
-                            settings.ImageColor3 = Color3.fromRGB(203, 0, 255)
-                            print("Modified Settings Button")
-                        end
-                    end
-                end
-                -- Modify Upper Currency
-                local upper = safeGet(status, "Upper")
-                if upper then
-                    local currency = safeGet(upper, "Currency")
-                    if currency then
-                        -- Modify CurrencyIcon
-                        local currencyIcon = safeGet(currency, "CurrencyIcon")
-                        if currencyIcon then
-                            currencyIcon.ImageColor3 = Color3.fromRGB(203, 0, 255)
-                            print("Modified Currency Icon")
-                        end
-                        -- Modify Amount (Text)
-                        local amount = safeGet(currency, "Amount")
-                        if amount then
-                            amount.TextColor3 = Color3.fromRGB(203, 0, 255)
-                            print("Modified Currency Amount")
-                        end
-                        -- Modify BG
-                        local bg = safeGet(currency, "BG")
-                        if bg then
-                            bg.ImageColor3 = Color3.fromRGB(203, 0, 255)
-                            print("Modified Currency BG")
-                        end
-                    end
-                end
-            end
-        end
-        -- Modify Middle Hotbar
-        local middle = safeGet(surface, "Middle")
-        if middle then
-            local hotbar = safeGet(middle, "Hotbar")
-            if hotbar then
-                local container = safeGet(hotbar, "Container")
-                if container then
-                    -- Modify Background
-                    local background = safeGet(container, "Background")
-                    if background then
-                        background.ImageColor3 = Color3.fromRGB(203, 0, 255)
-                        print("Modified Hotbar Background")
-                        -- Modify TopLine
-                        local topLine = safeGet(background, "TopLine")
-                        if topLine then
-                            topLine.ImageColor3 = Color3.fromRGB(203, 0, 255)
-                            print("Modified Hotbar TopLine")
-                        end
-                    end
-                    -- Modify BackpackButton
-                    local backpackButton = safeGet(container, "BackpackButton")
-                    if backpackButton then
-                        backpackButton.ImageColor3 = Color3.fromRGB(203, 0, 255)
-                        print("Modified Backpack Button")
-                    end
-                end
-            end
-        end
-        -- Modify Alert Background
-        local alert = safeGet(surface, "Alert")
-        if alert then
-            local alertBackground = safeGet(alert, "Background")
-            if alertBackground then
-                alertBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
-                print("Modified Alert Background")
-            end
-        end
-        -- Modify Disaster Background
-        local disaster = safeGet(surface, "Disaster")
-        if disaster then
-            local disasterBackground = safeGet(disaster, "Background")
-            if disasterBackground then
-                disasterBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
-                print("Modified Disaster Background")
-            end
-        end
-        -- Modify Map Background
-        local map = safeGet(surface, "Map")
-        if map then
-            local mapBackground = safeGet(map, "BG")
-            if mapBackground then
-                mapBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
-                print("Modified Map Background")
-            end
-        end
-        -- Modify Monetization Background
-        local monetization = safeGet(surface, "Monetization")
-        if monetization then
-            local monetizationBackground = safeGet(monetization, "Background")
-            if monetizationBackground then
-                monetizationBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
-                print("Modified Monetization Background")
-            end
-        end
-        -- Modify Bottom Background
-        local bottom = safeGet(surface, "Bottom")
-        if bottom then
-            local bottomBackground = safeGet(bottom, "Background")
-            if bottomBackground then
-                bottomBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
-                print("Modified Bottom Background")
-            end
-        end
-        -- Modify Top Background
-        local top = safeGet(surface, "Top")
-        if top then
-            local topBackground = safeGet(top, "Background")
-            if topBackground then
-                topBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
-                print("Modified Top Background")
-            end
-        end
-        -- Modify Settings Background
-        local settingsFrame = safeGet(surface, "Settings")
-        if settingsFrame then
-            local settingsBackground = safeGet(settingsFrame, "Background")
-            if settingsBackground then
-                settingsBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
-                print("Modified Settings Background")
-            end
-        end
-        -- Modify Close Background
-        local close = safeGet(surface, "Close")
-        if close then
-            local closeBackground = safeGet(close, "Background")
-            if closeBackground then
-                closeBackground.ImageColor3 = Color3.fromRGB(203, 0, 255)
-                print("Modified Close Background")
-            end
-        end
-    else
-        warn("Surface not found in UI")
+-- Apply GUI tweaks after a short delay to ensure UI loads
+task.spawn(function()
+    task.wait(2) -- Initial delay for game UI to load
+    applyGuiTweaks()
+end)
+
+-- Respawn Handling
+player.CharacterAdded:Connect(function()
+    toggles.flying = false
+    if flyBodyVelocity then flyBodyVelocity:Destroy() end
+    if flyBodyAngularVelocity then flyBodyAngularVelocity:Destroy() end
+    toggles.noclip = false
+    if noclipConnection then noclipConnection:Disconnect() end
+    toggles.infiniteJump = false
+    if jumpConnection then jumpConnection:Disconnect() end
+    toggles.esp = false
+    for _, conn in pairs(espConnections) do
+        if conn.update then conn.update:Disconnect() end
+        if conn.billboardGui then conn.billboardGui:Destroy() end
     end
-else
-    warn("UI not found in PlayerGui")
-end
+    espConnections = {}
+    toggles.speedHack = false
+    toggles.fullbright = false
+    applyGuiTweaks() -- Re-apply tweaks on respawn
+end)
+
+-- Print controls
+print("Artisan Client Loaded! Controls:")
+print("Y: Teleport to Doomspire")
+print("F: Toggle Flying (WASD, Space, Ctrl)")
+print("G: Toggle Noclip")
+print("H: Toggle Infinite Jump")
+print("J: Toggle ESP")
+print("K: Toggle Speed Hack")
+print("L: Toggle Fullbright")
+print("Left Ctrl + Click: Click Teleport")
